@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dossier — песочница оформления</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Только для песочницы: имитируем стол SillyTavern под расширением. */
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(120% 90% at 20% 0%, #35302a 0%, #201c17 55%, #14110d 100%);
+    font-family: system-ui, sans-serif;
+    color: #6f6355;
+  }
+  .hint {
+    position: fixed; left: 16px; bottom: 16px;
+    font-size: 11px; letter-spacing: .08em; opacity: .5;
+  }
+</style>
+</head>
+<body>
+<div class="hint">песочница оформления · папку можно таскать · клик открывает дело</div>
+<script type="module">
+/* Заглушка SillyTavern — ровно те методы, которых касается расширение. */
+const meta = {};
+const chat = Array.from({ length: 14 }, (_, i) => ({
+    name: i % 2 ? 'Вульф' : 'Алиса', is_user: i % 2 === 0, mes: 'реплика ' + i,
+}));
+/* Объект контекста создаётся ОДИН раз: в настоящем SillyTavern getContext()
+   возвращает ссылки на живые объекты, и настройки должны переживать вызовы. */
+const profiles = [{ id: 'p1', name: 'Haiku 4.5 (дешёвый разбор)', api: 'openai', mode: 'cc', model: 'x' }];
+const context = {
+    chat, chatMetadata: meta,
+    extensionSettings: { disabledExtensions: [], connectionManager: { profiles } },
+    eventSource: { on() {} }, eventTypes: new Proxy({}, { get: (_t, k) => String(k) }),
+    saveSettingsDebounced() {}, saveMetadataDebounced() {},
+    uuidv4: () => 'id' + Math.random().toString(36).slice(2),
+    getCurrentLocale: () => 'ru-ru', getCurrentChatId: () => 'demo',
+    generateRaw: async () => '{}', setExtensionPrompt() {},
+    callGenericPopup: async () => null, POPUP_TYPE: {}, POPUP_RESULT: {},
+    ConnectionManagerRequestService: { getSupportedProfiles: () => profiles },
+};
+globalThis.SillyTavern = { getContext: () => context };
+globalThis.toastr = new Proxy({}, { get: () => () => {} });
+
+const { getCase, saveCase } = await import('./src/store.js');
+const { recomputeClock } = await import('./src/extractor.js');
+const ui = await import('./src/ui.js');
+
+/* Демонстрационное дело. */
+const c = getCase();
+c.cursor = 11;
+c.clock.startDate = '1942-05-14 05:30';
+const F = (text, kind, importance, actors, a, b, pinned = false) => ({
+    id: 'f' + Math.random().toString(36).slice(2), text, kind, importance, actors,
+    msgStart: a, msgEnd: b, createdAt: Date.now(), pinned,
+});
+c.facts = [
+    F('Алиса и Вульф выехали из Каира на рассвете.', 'event', 4, ['Алиса', 'Вульф'], 0, 3),
+    F('Вульф солгал о содержимом чемодана.', 'secret', 5, ['Вульф'], 4, 6, true),
+    F('Вульф обещал вернуть ключ до полуночи.', 'promise', 3, ['Вульф'], 4, 6),
+    F('В купе пахло керосином и апельсинами.', 'place', 2, [], 7, 9),
+    F('Алиса узнала имя связного — Абдулла.', 'relation', 5, ['Алиса', 'Абдулла'], 10, 11),
+];
+c.scenes = [
+    { id: 's1', title: 'Поезд на юг', summary: 'Герои выехали из Каира и провели четыре часа в поезде.',
+      location: 'Каир — Асьют', statedTime: 'на рассвете', advanceMinutes: 240, msgStart: 0, msgEnd: 6 },
+    { id: 's2', title: 'Разговор о чемодане', summary: 'Алиса уличила Вульфа во лжи.',
+      location: 'Купе второго класса', statedTime: 'к полудню', advanceMinutes: 120, msgStart: 7, msgEnd: 9 },
+    { id: 's3', title: 'Имя связного', summary: 'Вульф назвал Абдуллу и потребовал молчания.',
+      location: 'Вокзал Асьюта', statedTime: 'ближе к вечеру', advanceMinutes: 300, msgStart: 10, msgEnd: 11 },
+];
+c.entities = [
+    { id: 'e1', name: 'Вульф', kind: 'person', mentions: 9,
+      notes: ['Скрывает содержимое чемодана.', 'Знает связного в Асьюте.'] },
+    { id: 'e2', name: 'Алиса', kind: 'person', mentions: 7, notes: ['Не доверяет Вульфу с момента отъезда.'] },
+    { id: 'e3', name: 'Абдулла', kind: 'person', mentions: 1, notes: ['Связной, имя названо вслух.'] },
+];
+recomputeClock();
+saveCase();
+
+const { diagnose, mark } = await import('./src/doctor.js');
+globalThis.dossierDoctor = diagnose;
+
+ui.mountUI();
+mark('domMounted'); mark('listenersBound');
+if (!location.hash.includes('closed')) ui.openCase();
+</script>
+</body>
+</html>

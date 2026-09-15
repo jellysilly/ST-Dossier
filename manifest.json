@@ -1,0 +1,12 @@
+{
+    "display_name": "Dossier — память сцен и хронология",
+    "loading_order": 100,
+    "requires": [],
+    "optional": ["connection-manager"],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "ВАШ-ЛОГИН",
+    "version": "1.0.2",
+    "homePage": "https://github.com/jellysilly/ST-Dossier",
+    "auto_update": true
+}
