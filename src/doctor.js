@@ -64,7 +64,9 @@ function collect(say) {
     say('Pointer Events', 'PointerEvent' in window ? 'есть' : 'НЕТ (старый браузер)');
 
     if (flags.initError) say('ошибка запуска', flags.initError);
-    if (flags.stepErrors.length) L.push('шаги с ошибками:\n  - ' + flags.stepErrors.join('\n  - '));
+    // say, а не L: L сюда не передан, и обращение к нему роняло диагностику
+    // ровно в том случае, когда ей было о чём рассказать.
+    flags.stepErrors.forEach((e, i) => say(i ? '' : 'шаги с ошибками', e));
 
     if (root) {
         say('z-index корня', pick(root, 'zIndex'));
@@ -91,13 +93,26 @@ function collect(say) {
         // Вердикт выносим только если под точкой действительно что-то нашлось:
         // ложная тревога хуже её отсутствия.
         if (top) {
+            // Различаем три случая: палец попадает в папку; его перехватил
+            // наш же слой (например, не скрывшееся дело); сверху чужой слой.
+            const ours = top === folder || folder.contains(top);
             const inside = !!(root && root.contains(top));
             say('под курсором/пальцем', describe(top));
-            say('это наша папка', inside ? 'да' : 'НЕТ <-- ПЕРЕКРЫТА ЧУЖИМ СЛОЕМ');
-            if (!inside) say('z-index перекрывшего', topZ(top));
+            say('это наша папка', ours ? 'да'
+                : inside ? 'НЕТ <-- ПЕРЕКРЫТА СВОИМ ЖЕ СЛОЕМ'
+                    : 'НЕТ <-- ПЕРЕКРЫТА ЧУЖИМ СЛОЕМ');
+            if (!ours) say('z-index перекрывшего', topZ(top));
         } else {
             say('под курсором/пальцем', 'определить не удалось');
         }
+    }
+
+    const caseEl = document.getElementById('dsr-case');
+    if (caseEl) {
+        const cs = style(caseEl);
+        const stuck = caseEl.hidden && cs && cs.display !== 'none';
+        say('дело', caseEl.hidden ? 'закрыто' : 'открыто');
+        if (stuck) say('закрытое дело в потоке', 'ДА <-- слой глотает касания интерфейса');
     }
 
     const c = ctx();

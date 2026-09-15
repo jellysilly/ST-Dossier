@@ -41,6 +41,14 @@
 
 #dsr-root > * { pointer-events: auto; }
 
+/* Наши собственные display:flex/grid перебивают браузерное
+   [hidden] { display: none } — правило автора сильнее правила UA независимо
+   от специфичности. Из-за этого закрытое дело оставалось в потоке: прозрачный
+   слой поверх всего экрана (на телефоне — почти во весь экран) ловил касания
+   вместо интерфейса SillyTavern, а заодно накрывал и саму папку, из-за чего
+   она «не двигалась и не реагировала». Возвращаем атрибуту его смысл. */
+#dsr-root [hidden] { display: none !important; }
+
 /* Свой box-sizing: иначе размеры полей зависят от того, что именно
    сбрасывает тема SillyTavern, и вёрстка «плывёт» от темы к теме. */
 #dsr-root *,
@@ -130,7 +138,9 @@ select.dsr-input { background: rgba(255, 255, 255, .5); }
     filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .5));
     animation: dsr-breathe 7s ease-in-out infinite;
 }
-.dsr-folder.dsr-dragging { cursor: grabbing; animation: none; }
+.dsr-folder.dsr-dragging,
+.dsr-folder.dsr-measuring { animation: none; }
+.dsr-folder.dsr-dragging { cursor: grabbing; }
 .dsr-folder:focus-visible { outline: 2px solid var(--dsr-brass); outline-offset: 4px; }
 
 /* язычок с надписью «ДЕЛО» */
@@ -229,6 +239,9 @@ select.dsr-input { background: rgba(255, 255, 255, .5); }
     transition: opacity .24s var(--dsr-ease), transform .3s var(--dsr-ease);
 }
 .dsr-case.is-open { opacity: 1; transform: none; }
+/* Пока дело гаснет после закрытия, оно ещё в потоке и невидимо —
+   касания в эти доли секунды должны проходить насквозь. */
+.dsr-case:not(.is-open) { pointer-events: none; }
 
 /* подложка-обложка с бабочкой */
 .dsr-case__cover {
