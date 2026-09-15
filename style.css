@@ -25,8 +25,21 @@
 
     --dsr-ease: cubic-bezier(.22, .8, .3, 1);
 
+    /* Не inset/bottom, а высота в единицах вьюпорта. SillyTavern держит на
+       <html> -webkit-transform: translateZ(0) и -webkit-perspective (лечение
+       мигания размытых панелей), поэтому содержащий блок для всего
+       position: fixed на странице — это <html>, а не окно. На узком экране
+       (<=1000px) SillyTavern делает body position: fixed, поток <html>
+       пустеет, его высота обращается в ноль — и растяжка inset: 0 даёт слой
+       нулевой высоты, а любой отступ «снизу» отсчитывается от верхнего края
+       экрана вверх. Именно поэтому дело уезжало за верхнюю кромку и на
+       телефоне не появлялось вовсе, а в режиме ПК всё работало. */
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    height: 100dvh;
     pointer-events: none;
     /* Выше слоёв SillyTavern, которые иначе накрывают папку:
        .fillLeft/.fillRight 3000, #top-settings-holder 3005, #movingDivs>div 4000
@@ -122,7 +135,9 @@ select.dsr-input { background: rgba(255, 255, 255, .5); }
 /* ============================================================== ПАПКА ==== */
 
 .dsr-folder {
-    position: fixed;
+    /* absolute, а не fixed: отсчёт идёт от нашего слоя, размер которого мы
+       задаём сами, — чужой содержащий блок на положение папки больше не влияет. */
+    position: absolute;
     right: 18px;
     bottom: 104px;
     width: 62px;
@@ -229,9 +244,10 @@ select.dsr-input { background: rgba(255, 255, 255, .5); }
 /* ============================================================== ДЕЛО ===== */
 
 .dsr-case {
-    position: fixed;
+    position: absolute;
     width: min(560px, calc(100vw - 24px));
     height: min(640px, calc(100vh - 24px));
+    height: min(640px, calc(100dvh - 24px));
     display: flex;
     opacity: 0;
     transform: perspective(1400px) rotateX(-12deg) translateY(14px) scale(.965);
@@ -907,7 +923,7 @@ select.dsr-input { background: rgba(255, 255, 255, .5); }
         left: 0 !important;
         top: auto !important;
         bottom: 0;
-        width: 100vw;
+        width: 100%;
         height: 88vh;
         height: 88dvh;
         transform: translateY(100%);

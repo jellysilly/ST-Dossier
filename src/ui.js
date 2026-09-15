@@ -136,7 +136,7 @@ function bindEvents() {
     // на узком экране дело раскрывается на весь экран, таскать нечего
     const head = root.querySelector('#dsr-head');
     makeDraggable(head, caseEl, {
-        onEnd: () => { if (isNarrow()) { caseEl.style.left = ''; caseEl.style.top = ''; } },
+        onEnd: () => { if (isNarrow()) clearCaseOffsets(); },
     });
 
     root.querySelectorAll('.dsr-tab').forEach(btn => {
@@ -147,13 +147,25 @@ function bindEvents() {
     root.addEventListener('change', onChange);
     root.addEventListener('input', onInput);
 
-    window.addEventListener('resize', () => keepInViewport(folderEl));
+    // Поворот экрана может перевести дело из листа в панель и обратно —
+    // разметку в этот момент надо выбрать заново.
+    window.addEventListener('resize', () => {
+        keepInViewport(folderEl);
+        if (!state.open) return;
+        caseEl.classList.toggle('dsr-case--sheet', isNarrow());
+        positionCase();
+    });
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && state.open) closeCase();
     });
 
     bus.addEventListener('updated', () => { refresh(); refreshInjection(); });
     bus.addEventListener('busy', e => setBusy(e.detail.busy));
+}
+
+/** Снимаем все координаты дела: дальше его держит CSS. */
+function clearCaseOffsets() {
+    for (const side of ['left', 'top', 'right', 'bottom']) caseEl.style[side] = '';
 }
 
 /** Ищем элемент управления в пределах нашего дерева. */
@@ -267,7 +279,10 @@ export function closeCase() {
 
 /** Раскрываем дело рядом с папкой, но не за краем экрана. */
 function positionCase() {
-    if (isNarrow()) { caseEl.style.left = ''; caseEl.style.top = ''; return; }
+    // Лист на телефоне держится краями экрана, а не координатами. Снимаем все
+    // четыре: перетаскивание шапки оставляет ещё right/bottom: auto, и они
+    // отменяли бы привязку листа к нижней кромке.
+    if (isNarrow()) { clearCaseOffsets(); return; }
     const f = folderEl.getBoundingClientRect();
     const w = Math.min(560, window.innerWidth - 24);
     const h = Math.min(640, window.innerHeight - 24);
