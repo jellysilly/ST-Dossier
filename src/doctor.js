@@ -71,6 +71,18 @@ function collect(say) {
     if (root) {
         say('z-index корня', pick(root, 'zIndex'));
         say('pointer-events корня', pick(root, 'pointerEvents'));
+
+        // Слой обязан совпадать с экраном. Если чужой предок (в SillyTavern это
+        // <html> с -webkit-perspective) стал содержащим блоком и схлопнулся в
+        // нулевую высоту, всё, что мы кладём «снизу», уезжает за верхнюю кромку.
+        const rr = rect(root);
+        if (rr) {
+            say('слой расширения', `${Math.round(rr.left)},${Math.round(rr.top)} ${Math.round(rr.width)}x${Math.round(rr.height)}`);
+            say('экран', `${innerWidth}x${innerHeight}`);
+            const ok = Math.abs(rr.top) < 2 && Math.abs(rr.left) < 2 && rr.height > innerHeight / 2;
+            say('слой совпал с экраном', ok ? 'да' : 'НЕТ <-- отсчёт снизу уедет за кромку');
+            if (!ok) say('содержащий блок', describe(offsetRoot(root)));
+        }
     }
 
     const folder = document.getElementById('dsr-folder');
@@ -122,6 +134,18 @@ function collect(say) {
         say('сообщений в чате', Array.isArray(c.chat) ? c.chat.length : 'нет чата');
     }
     say('узел #extensions_settings2', document.getElementById('extensions_settings2') ? 'есть' : 'НЕТ');
+}
+
+/** Предок, от которого браузер отсчитывает наш слой. */
+function offsetRoot(el) {
+    let node = el.parentElement;
+    while (node) {
+        const cs = style(node);
+        if (cs && (cs.transform !== 'none' || cs.perspective !== 'none' ||
+                   cs.filter !== 'none' || cs.willChange !== 'auto' || cs.contain !== 'none')) return node;
+        node = node.parentElement;
+    }
+    return document.documentElement;
 }
 
 function describe(el) {
