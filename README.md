@@ -76,9 +76,9 @@ SillyTavern склонирует репозиторий сам. Имя папк�
 
 Папку целиком (с `manifest.json` внутри) положить в одно из мест:
 
-- только для себя: `data/<ваш-пользователь>/extensions/SillyTavern-Dossier/`
-  (обычно `data/default-user/extensions/SillyTavern-Dossier/`);
-- для всех пользователей: `public/scripts/extensions/third-party/SillyTavern-Dossier/`.
+- только для себя: `data/<ваш-пользователь>/extensions/ST-Dossier/`
+  (обычно `data/default-user/extensions/ST-Dossier/`);
+- для всех пользователей: `public/scripts/extensions/third-party/ST-Dossier/`.
 
 Перезапустить SillyTavern и обновить страницу. Расширение появится в меню
 «Extensions», а поверх чата — папка.
