@@ -3,7 +3,17 @@
  * Клик от перетаскивания отличаем по порогу сдвига.
  */
 
-const THRESHOLD = 5;
+/**
+ * Порог, после которого нажатие считается перетаскиванием.
+ * У мыши дрожания нет, у пальца оно неизбежно: системный «tap slop» —
+ * 8dp на Android и около 10px на iOS. С общим порогом в 5px обычное
+ * касание папки почти всегда опознавалось как перетаскивание, и дело
+ * не открывалось — на телефоне расширение выглядело неотзывчивым.
+ */
+const THRESHOLD = { mouse: 5, pen: 8, touch: 12 };
+
+/** Неизвестный тип указателя — считаем пальцем: мягче к дрожанию. */
+const slopFor = type => THRESHOLD[type] ?? THRESHOLD.touch;
 
 /**
  * Элементы, с которых перетаскивание начинаться не должно.
@@ -21,6 +31,7 @@ const INTERACTIVE = 'button, input, select, textarea, a, label, [data-act], [dat
 export function makeDraggable(handle, target, opts = {}) {
     let pointerId = null;
     let captured = false;
+    let slop = THRESHOLD.touch;
     let startX = 0, startY = 0, baseX = 0, baseY = 0, moved = false;
 
     function onDown(e) {
@@ -29,6 +40,7 @@ export function makeDraggable(handle, target, opts = {}) {
         if (typeof e.target?.closest === 'function' && e.target.closest(INTERACTIVE)) return;
         pointerId = e.pointerId;
         moved = false;
+        slop = slopFor(e.pointerType);
 
         // Класс снимает «дыхание» папки: анимация сдвигает элемент
         // трансформацией, и замер до неё давал бы скачок в начале перетаскивания.
@@ -52,12 +64,19 @@ export function makeDraggable(handle, target, opts = {}) {
 
     function onMove(e) {
         if (pointerId === null || e.pointerId !== pointerId) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        if (!moved && Math.hypot(dx, dy) < THRESHOLD) return;
-        moved = true;
+
+        if (!moved) {
+            if (Math.hypot(e.clientX - startX, e.clientY - startY) < slop) return;
+            moved = true;
+            // Перетаскивание отсчитываем от точки перехвата, а не от начала
+            // касания: иначе элемент прыгал бы на величину порога.
+            startX = e.clientX;
+            startY = e.clientY;
+        }
         e.preventDefault();
 
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
         const rect = target.getBoundingClientRect();
         const x = clamp(baseX + dx, 2, window.innerWidth - rect.width - 2);
         const y = clamp(baseY + dy, 2, window.innerHeight - rect.height - 2);
