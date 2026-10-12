@@ -81,7 +81,7 @@ export function renderArchive(state) {
         <div class="dsr-card__meta">
           <span class="dsr-imp" title="${esc(T('importance'))}">${dots(f.importance)}</span>
           ${(f.actors || []).length ? `<span class="dsr-actors">${esc(f.actors.join(' · '))}</span>` : ''}
-          ${f.msgStart !== null && f.msgStart !== undefined ? `<span class="dsr-msg">#${f.msgStart}–${f.msgEnd}</span>` : ''}
+          ${f.msgStart !== null && f.msgStart !== undefined ? `<span class="dsr-msg">#${esc(f.msgStart)}–${esc(f.msgEnd)}</span>` : ''}
         </div>
       </div>
       <div class="dsr-card__acts">
@@ -120,7 +120,7 @@ export function renderTimeline() {
       <div class="dsr-tl__when">
         ${sc.statedTime ? `<b>${esc(sc.statedTime)}</b>` : ''}
         ${sc.advanceMinutes ? `<span class="dsr-tl__delta">+${esc(formatElapsed(sc.advanceMinutes))}</span>` : ''}
-        <span class="dsr-msg">#${sc.msgStart}–${sc.msgEnd}</span>
+        <span class="dsr-msg">#${esc(sc.msgStart)}–${esc(sc.msgEnd)}</span>
       </div>
       <div class="dsr-tl__body">
         <h4>${esc(sc.title)}</h4>
